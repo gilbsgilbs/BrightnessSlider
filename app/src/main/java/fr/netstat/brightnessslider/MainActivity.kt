@@ -9,7 +9,6 @@ import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.appcompat.app.AppCompatActivity
 
-
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,7 +18,7 @@ class MainActivity : AppCompatActivity() {
         val canWritePermission = Settings.System.canWrite(this)
         if (!canWritePermission) {
             val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
-            intent.data = Uri.parse("package:${packageName}")
+            intent.data = Uri.parse("package:$packageName")
             startActivity(intent)
         }
 
@@ -35,9 +34,11 @@ class MainActivity : AppCompatActivity() {
         for (enabledService in enabledServices) {
             val enabledServiceInfo = enabledService.resolveInfo.serviceInfo
             if (
-                enabledServiceInfo.packageName.equals(packageName)
-                && enabledServiceInfo.name.equals(StatusBarAccessibilityService::class.java.name)
-            ) return true
+                enabledServiceInfo.packageName.equals(packageName) &&
+                enabledServiceInfo.name.equals(StatusBarAccessibilityService::class.java.name)
+            ) {
+                return true
+            }
         }
         return false
     }

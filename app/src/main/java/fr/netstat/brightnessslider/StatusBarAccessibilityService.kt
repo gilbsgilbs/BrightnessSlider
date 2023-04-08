@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityService
 import android.content.res.Resources
 import android.graphics.PixelFormat
 import android.provider.Settings
-import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -12,19 +11,20 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import kotlin.math.abs
 
-
 class StatusBarAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        @Suppress("DEPRECATION") val params = WindowManager.LayoutParams(
+
+        @Suppress("DEPRECATION")
+        val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             getStatusBarHeight(),
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                    or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-                    or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                    or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
-                    or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
+                or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
 //            or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE  // <= SDK30 ??
             PixelFormat.TRANSLUCENT,
         ).apply {
@@ -55,15 +55,15 @@ class StatusBarAccessibilityService : AccessibilityService() {
                 MotionEvent.ACTION_MOVE -> {
                     if (event.y <= statusBarHeight && minDistance <= abs(event.x - firstXValue)) {
                         val totalWidth = getScreenWidth()
-                        val margin = 100;
+                        val margin = 100
                         val brightnessValue = (
                             255 * (event.x - margin) / (totalWidth - 2 * margin)
-                        ).toInt().coerceIn(0, 255)
+                            ).toInt().coerceIn(0, 255)
 
                         Settings.System.putInt(
                             contentResolver,
                             Settings.System.SCREEN_BRIGHTNESS,
-                            brightnessValue
+                            brightnessValue,
                         )
                     }
                 }
@@ -76,10 +76,7 @@ class StatusBarAccessibilityService : AccessibilityService() {
 
     private fun getStatusBarHeight(): Int {
         val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-        if (resourceId != 0) {
-            return resources.getDimensionPixelSize(resourceId)
-        }
-        return 120;
+        return if (resourceId != 0) resources.getDimensionPixelSize(resourceId) else 120
     }
 
     private fun getScreenWidth() = Resources.getSystem().displayMetrics.widthPixels
