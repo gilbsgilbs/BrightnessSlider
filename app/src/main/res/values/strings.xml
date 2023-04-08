@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">BrightnessSlider</string>
+    <string name="accessibility_service_description">BrightnessSlider accessibility service</string>
+</resources>
