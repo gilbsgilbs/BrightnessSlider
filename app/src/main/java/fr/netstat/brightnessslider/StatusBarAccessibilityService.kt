@@ -33,7 +33,6 @@ class StatusBarAccessibilityService : AccessibilityService() {
 
         val layout = View(this)
 
-        val statusBarHeight = getStatusBarHeight()
         val minXDistance = 100f // Minimum sliding distance to start changing the brightness
         var firstXValue = 0f // Position at which the user started touching the status bar
         var isSliding = false // Whether the user is currently sliding on the status bar
@@ -44,20 +43,16 @@ class StatusBarAccessibilityService : AccessibilityService() {
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     isSliding = false
+                    firstXValue = event.x
 
                     val currentTime = System.currentTimeMillis()
-
-                    if (event.y <= statusBarHeight) {
-                        firstXValue = event.x
-                        if (currentTime - startTouchTime < maxTouchDelay) {
-                            performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
-                        }
+                    if (currentTime - startTouchTime < maxTouchDelay) {
+                        performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
                     }
-
                     startTouchTime = currentTime
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (!isSliding && event.y <= statusBarHeight && minXDistance <= abs(event.x - firstXValue)) {
+                    if (!isSliding && minXDistance <= abs(event.x - firstXValue)) {
                         isSliding = true
                     }
                     if (isSliding) {
