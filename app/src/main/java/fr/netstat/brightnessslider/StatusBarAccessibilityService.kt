@@ -34,30 +34,36 @@ class StatusBarAccessibilityService : AccessibilityService() {
         val layout = View(this)
 
         val statusBarHeight = getStatusBarHeight()
-        var firstXValue = 0f
-        val minDistance = 100f
-        var firstTouchTime = 0L
-        val maxTouchDelay = 300
+        val minXDistance = 100f // Minimum sliding distance to start changing the brightness
+        var firstXValue = 0f // Position at which the user started touching the status bar
+        var isSliding = false // Whether the user is currently sliding on the status bar
+        val padding = 100 // Left and right "deadzone"
+        var startTouchTime = 0L // Epoch at which the user started touching the status bar
+        val maxTouchDelay = 300 // Maximum delay between two touches to trigger a screen lock
         layout.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    isSliding = false
+
                     val currentTime = System.currentTimeMillis()
 
                     if (event.y <= statusBarHeight) {
                         firstXValue = event.x
-                        if (currentTime - firstTouchTime < maxTouchDelay) {
+                        if (currentTime - startTouchTime < maxTouchDelay) {
                             performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
                         }
                     }
 
-                    firstTouchTime = currentTime
+                    startTouchTime = currentTime
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (event.y <= statusBarHeight && minDistance <= abs(event.x - firstXValue)) {
+                    if (!isSliding && event.y <= statusBarHeight && minXDistance <= abs(event.x - firstXValue)) {
+                        isSliding = true
+                    }
+                    if (isSliding) {
                         val totalWidth = getScreenWidth()
-                        val margin = 100
                         val brightnessValue = (
-                            255 * (event.x - margin) / (totalWidth - 2 * margin)
+                            255 * (event.x - padding) / (totalWidth - 2 * padding)
                             ).toInt().coerceIn(0, 255)
 
                         Settings.System.putInt(
