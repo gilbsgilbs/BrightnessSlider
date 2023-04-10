@@ -85,7 +85,16 @@ class StatusBarAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         when (event.eventType) {
-            AccessibilityEvent.TYPE_ANNOUNCEMENT -> {
+            // We need to disable the view when screen is locked because the brightness
+            // control is all buggy and laggy on the lockscreen, and it prevents opening
+            // the status bar menu. The proper event type for this should be
+            // "TYPE_ANNOUNCEMENT" and not "TYPE_WINDOW_STATE_CHANGED" because an event of
+            // "TYPE_ANNOUNCEMENT" is supposed to be emitted when locking and unlocking the
+            // screen. However, for some reason, the announcement is randomly not
+            // triggered, typically when locking the screen and instantly powering the
+            // screen back on. The window state changed is triggered more frequently, but
+            // at least consistently.
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
                 when (keyguardManager.isDeviceLocked) {
                     true -> statusBarView.visibility = View.INVISIBLE

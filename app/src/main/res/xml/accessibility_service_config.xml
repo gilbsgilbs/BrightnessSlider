@@ -3,9 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/accessibility_service_description"
     android:settingsActivity="fr.netstat.brightnessslider.MainActivity"
-    android:accessibilityEventTypes="typeAnnouncement"
-    android:accessibilityFlags="flagRetrieveInteractiveWindows|flagIncludeNotImportantViews|flagReportViewIds"
-    android:accessibilityFeedbackType="feedbackAllMask"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds"
     android:canRetrieveWindowContent="false"
-    android:notificationTimeout="100"
 />
