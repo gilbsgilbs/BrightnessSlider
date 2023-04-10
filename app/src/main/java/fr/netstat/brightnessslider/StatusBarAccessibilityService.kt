@@ -1,6 +1,7 @@
 package fr.netstat.brightnessslider
 
 import android.accessibilityservice.AccessibilityService
+import android.annotation.SuppressLint
 import android.app.KeyguardManager
 import android.content.res.Resources
 import android.graphics.PixelFormat
@@ -10,14 +11,43 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import kotlin.math.abs
 
 class StatusBarAccessibilityService : AccessibilityService() {
+    companion object {
+        // Not holding an indefinite static reference, so this should be ok.
+        // However, singleton is unsatisfying here, but is there another solution?
+        @SuppressLint("StaticFieldLeak")
+        var instance: StatusBarAccessibilityService? = null
+            private set
+    }
+
     private lateinit var statusBarView: View
+    private lateinit var preferences: Preferences
+
+    override fun onCreate() {
+        super.onCreate()
+
+        instance = this
+        statusBarView = View(this)
+        preferences = Preferences(this)
+
+        EventBus.getDefault().register(this)
+        EventBus.getDefault().post(AccessibilityStatusChangedEvent(AccessibilityStatusType.BOUND))
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        instance = null
+        EventBus.getDefault().unregister(this)
+        EventBus.getDefault().post(AccessibilityStatusChangedEvent(AccessibilityStatusType.UNBOUND))
+    }
 
     override fun onServiceConnected() {
-        statusBarView = View(this)
-
         val minXDistance = 100f // Minimum sliding distance to start changing the brightness
         var firstXValue = 0f // Position at which the user started touching the status bar
         var isSliding = false // Whether the user is currently sliding on the status bar
@@ -94,15 +124,27 @@ class StatusBarAccessibilityService : AccessibilityService() {
             // triggered, typically when locking the screen and instantly powering the
             // screen back on. The window state changed is triggered more frequently, but
             // at least consistently.
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
-                when (keyguardManager.isDeviceLocked) {
-                    true -> statusBarView.visibility = View.INVISIBLE
-                    false -> statusBarView.visibility = View.VISIBLE
-                }
-            }
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> updateViewVisibility()
             else -> {}
         }
     }
+
     override fun onInterrupt() {}
+
+    private fun isDeviceLocked(): Boolean {
+        val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+        return keyguardManager.isDeviceLocked
+    }
+
+    private fun updateViewVisibility() {
+        statusBarView.visibility = when {
+            preferences.isGloballyDisabled || isDeviceLocked() -> View.INVISIBLE
+            else -> View.VISIBLE
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onGloballyDisabledChange(event: GloballyDisabledChangedEvent) {
+        updateViewVisibility()
+    }
 }

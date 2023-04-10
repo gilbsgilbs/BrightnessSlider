@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">BrightnessSlider</string>
     <string name="accessibility_service_description">BrightnessSlider accessibility service</string>
+    <string name="shared_pref_is_globally_disabled">shared_pref_is_globally_disabled</string>
 </resources>
