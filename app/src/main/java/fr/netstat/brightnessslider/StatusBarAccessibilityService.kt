@@ -1,6 +1,7 @@
 package fr.netstat.brightnessslider
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
 import android.content.res.Resources
 import android.graphics.PixelFormat
 import android.provider.Settings
@@ -12,26 +13,10 @@ import android.view.accessibility.AccessibilityEvent
 import kotlin.math.abs
 
 class StatusBarAccessibilityService : AccessibilityService() {
+    private lateinit var statusBarView: View
+
     override fun onServiceConnected() {
-        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-
-        @Suppress("DEPRECATION")
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            getStatusBarHeight(),
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-                or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
-                or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-//            or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE  // <= SDK30 ??
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.TOP
-        }
-
-        val layout = View(this)
+        statusBarView = View(this)
 
         val minXDistance = 100f // Minimum sliding distance to start changing the brightness
         var firstXValue = 0f // Position at which the user started touching the status bar
@@ -39,7 +24,7 @@ class StatusBarAccessibilityService : AccessibilityService() {
         val padding = 100 // Left and right "deadzone"
         var startTouchTime = 0L // Epoch at which the user started touching the status bar
         val maxTouchDelay = 300 // Maximum delay between two touches to trigger a screen lock
-        layout.setOnTouchListener { _, event ->
+        statusBarView.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     isSliding = false
@@ -72,7 +57,23 @@ class StatusBarAccessibilityService : AccessibilityService() {
             false
         }
 
-        windowManager.addView(layout, params)
+        @Suppress("DEPRECATION")
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            getStatusBarHeight(),
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR // Deprecated
+                or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+//            or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE  // <= SDK30 ??
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP
+        }
+        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager.addView(statusBarView, params)
     }
 
     private fun getStatusBarHeight(): Int {
@@ -82,6 +83,17 @@ class StatusBarAccessibilityService : AccessibilityService() {
 
     private fun getScreenWidth() = Resources.getSystem().displayMetrics.widthPixels
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent) {}
+    override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        when (event.eventType) {
+            AccessibilityEvent.TYPE_ANNOUNCEMENT -> {
+                val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+                when (keyguardManager.isDeviceLocked) {
+                    true -> statusBarView.visibility = View.INVISIBLE
+                    false -> statusBarView.visibility = View.VISIBLE
+                }
+            }
+            else -> {}
+        }
+    }
     override fun onInterrupt() {}
 }
