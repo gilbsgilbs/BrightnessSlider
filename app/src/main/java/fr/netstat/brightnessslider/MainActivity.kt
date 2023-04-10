@@ -23,7 +23,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (!isAccessibilityServiceEnabled()) {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            val bundle = Bundle().apply {
+                val bundleString = "$packageName/${StatusBarAccessibilityService::class.java.name}"
+                putString(":settings:fragment_args_key", bundleString)
+            }
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                putExtra(":settings:show_fragment_args", bundle)
+            }
             startActivity(intent)
         }
     }
